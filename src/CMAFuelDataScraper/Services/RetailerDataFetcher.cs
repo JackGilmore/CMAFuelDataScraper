@@ -57,9 +57,12 @@ namespace CMAFuelDataScraper.Services
             }
         }
 
-        public async Task FetchAllRetailersAsync(List<Retailer> retailers, int maxParallelRequests, TimeSpan timeout)
+        public async Task<Dictionary<Retailer, RetailerDto>> FetchAllRetailersAsync(List<Retailer> retailers, int maxParallelRequests, TimeSpan timeout)
         {
             _logger.LogInformation("Individual retailer scraping started with {MaxParallelRequests} parallel requests", maxParallelRequests);
+
+            var results = new Dictionary<Retailer, RetailerDto>();
+            var lockObject = new object();
 
             using var semaphore = new SemaphoreSlim(maxParallelRequests);
             using var ctsAll = new CancellationTokenSource(timeout);
@@ -74,6 +77,11 @@ namespace CMAFuelDataScraper.Services
                     {
                         _logger.LogWarning("Failed to fetch retailer: {RetailerName} ({SourceUrl})", retailer.Name, retailer.SourceUrl);
                         return;
+                    }
+
+                    lock (lockObject)
+                    {
+                        results[retailer] = retailerData;
                     }
 
                     _logger.LogInformation("Fetched {RetailerName} ({SourceUrl}) - {StationCount} stations - Last updated: {LastUpdated}", 
@@ -96,6 +104,8 @@ namespace CMAFuelDataScraper.Services
             await Task.WhenAll(fetchTasks);
 
             _logger.LogInformation("All retailer scraping tasks completed");
+
+            return results;
         }
     }
 }

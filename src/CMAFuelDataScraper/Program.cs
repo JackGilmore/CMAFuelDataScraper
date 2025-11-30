@@ -29,6 +29,8 @@ namespace CMAFuelDataScraper
                 })
                 .AddSingleton<CmaFuelPageScraper>()
                 .AddSingleton<RetailerDataFetcher>()
+                .AddSingleton<DataTransformer>()
+                .AddSingleton<JsonLinesWriter>()
                 .BuildServiceProvider();
 
             var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
@@ -71,7 +73,23 @@ namespace CMAFuelDataScraper
             var timeout = TimeSpan.FromMinutes(3);
 
             var fetcher = serviceProvider.GetRequiredService<RetailerDataFetcher>();
-            await fetcher.FetchAllRetailersAsync(retailers, maxParallelRequests, timeout);
+            var fetchedData = await fetcher.FetchAllRetailersAsync(retailers, maxParallelRequests, timeout);
+
+            if (fetchedData.Count == 0)
+            {
+                logger.LogWarning("No retailer data was successfully fetched");
+                return;
+            }
+
+            var transformer = serviceProvider.GetRequiredService<DataTransformer>();
+            var retailerOutputs = fetchedData.Select(kvp => DataTransformer.TransformRetailer(kvp.Key, kvp.Value)).ToList();
+            var stationOutputs = fetchedData.SelectMany(kvp => DataTransformer.TransformStations(kvp.Key.Name, kvp.Value)).ToList();
+
+            var writer = serviceProvider.GetRequiredService<JsonLinesWriter>();
+            await writer.WriteRetailersAsync(retailerOutputs, "retailers.jsonl");
+            await writer.WriteStationsAsync(stationOutputs, "stations.jsonl");
+
+            logger.LogInformation("Data export completed successfully");
         }
 
         private static int GetMaxParallelRequests(IConfiguration configuration)
