@@ -1,0 +1,41 @@
+/* Custom frontend styles for retailers and map */
+
+.retailer-card {
+  cursor: pointer;
+  border: 1px solid #e6e6e6;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: #fff;
+  transition: box-shadow .15s ease, transform .05s ease;
+}
+
+.retailer-card:hover {
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+  transform: translateY(-2px);
+}
+
+.retailer-card.active {
+  border-color: #0d6efd;
+  box-shadow: 0 8px 24px rgba(13,110,253,0.12);
+}
+
+.retailer-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.retailer-meta {
+  font-size: 0.85rem;
+  color: #6c757d;
+}
+
+#map {
+  border: 1px solid #e9ecef;
+  border-radius: .5rem;
+}
+
+.card-all {
+  display:flex; align-items:center; justify-content:center; font-weight:600;
+}
+
+.small-muted { color: #6c757d; font-size: .85rem; }
