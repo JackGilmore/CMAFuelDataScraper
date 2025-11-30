@@ -21,6 +21,8 @@ title: "Fuel Retailers & Stations"
 	</div>
 
 	<div id="status" class="mt-2 text-muted small"></div>
+	
+	<div class="mt-2 text-muted">This data originates from the<a href="https://www.gov.uk/guidance/access-fuel-price-data" target="_blank">CMA Road fuel monitoring scheme</a> and is displayed using <a href="https://tapintodata.com/" target="_blank">tap<a> as a backend.</div>
 </div>
 
 <!-- The layout includes scripts for Leaflet, Bootstrap and will load /assets/js/main.js -->
