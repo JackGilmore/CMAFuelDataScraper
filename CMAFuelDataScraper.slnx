@@ -3,4 +3,5 @@
     <File Path=".editorconfig" />
   </Folder>
   <Project Path="src/CMAFuelDataScraper/CMAFuelDataScraper.csproj" />
+  <Project Path="src/Frontend/Frontend.shproj" Id="6840d2ff-3e17-40fa-a69a-5ecd1fb48871" />
 </Solution>
