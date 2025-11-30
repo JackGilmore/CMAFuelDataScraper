@@ -180,20 +180,41 @@
             const name = s.name || s.station_name || s.address || s.id || 'Station';
             const retailer = s.retailer_name || s.retailer || s.group || '';
             
-            // Build fuel price badges
-            let fuelPrices = '';
-            if (s.E10 != null) fuelPrices += `<span class="badge bg-success me-1">E10: ${s.E10}p</span>`;
-            if (s.E5 != null) fuelPrices += `<span class="badge bg-success me-1">E5: ${s.E5}p</span>`;
-            if (s.B7 != null) fuelPrices += `<span class="badge bg-dark me-1">B7: ${s.B7}p</span>`;
-            if (s.SDV != null) fuelPrices += `<span class="badge bg-dark me-1">SDV: ${s.SDV}p</span>`;
+            // Build fuel price badges for popup (with prices)
+            let fuelPricesPopup = '';
+            if (s.E10 != null) fuelPricesPopup += `<span class="badge bg-success me-1">E10: ${s.E10}p</span>`;
+            if (s.E5 != null) fuelPricesPopup += `<span class="badge bg-success me-1">E5: ${s.E5}p</span>`;
+            if (s.B7 != null) fuelPricesPopup += `<span class="badge bg-dark me-1">B7: ${s.B7}p</span>`;
+            if (s.SDV != null) fuelPricesPopup += `<span class="badge bg-dark me-1">SDV: ${s.SDV}p</span>`;
+            
+            // Build fuel type badges for marker (without prices)
+            let fuelTypesMarker = '';
+            if (s.E10 != null) fuelTypesMarker += `<span class="badge bg-success">E10</span>`;
+            if (s.E5 != null) fuelTypesMarker += `<span class="badge bg-success">E5</span>`;
+            if (s.B7 != null) fuelTypesMarker += `<span class="badge bg-dark">B7</span>`;
+            if (s.SDV != null) fuelTypesMarker += `<span class="badge bg-dark">SDV</span>`;
+            
+            // Create custom marker icon with fuel types (no prices)
+            const markerHtml = `
+                <div class="custom-marker">
+                    ${fuelTypesMarker || '<span class="badge bg-secondary">?</span>'}
+                </div>`;
+            
+            const customIcon = L.divIcon({
+                className: 'custom-div-icon',
+                html: markerHtml,
+                iconSize: [80, 100],
+                iconAnchor: [40, 50]
+            });
             
             const popup = `
                 <div style="min-width:180px">
                     <strong>${escapeHtml(name)}</strong>
                     <div class="small-muted mb-2">${escapeHtml(retailer)}</div>
-                    ${fuelPrices ? `<div class="mt-2">${fuelPrices}</div>` : '<div class="text-muted small">No price data</div>'}
+                    ${fuelPricesPopup ? `<div class="mt-2">${fuelPricesPopup}</div>` : '<div class="text-muted small">No price data</div>'}
                 </div>`;
-            const marker = L.marker([parseFloat(lat), parseFloat(lon)]).bindPopup(popup);
+            
+            const marker = L.marker([parseFloat(lat), parseFloat(lon)], { icon: customIcon }).bindPopup(popup);
             markersLayer.addLayer(marker);
         });
 
@@ -210,10 +231,66 @@
         try {
             initMap();
             loadRetailers();
+            setupLocationButton();
         } catch (err) {
             console.error('Init error', err);
             setStatus('Failed to initialize frontend');
         }
     });
+
+    function setupLocationButton() {
+        const locateBtn = el('locate-btn');
+        if (!locateBtn) return;
+
+        locateBtn.addEventListener('click', () => {
+            if (!navigator.geolocation) {
+                setStatus('Geolocation is not supported by your browser');
+                setTimeout(() => setStatus(''), 3000);
+                return;
+            }
+
+            setStatus('Getting your location...');
+            locateBtn.disabled = true;
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const { latitude, longitude } = position.coords;
+                    map.setView([latitude, longitude], 13);
+                    
+                    // Add a temporary marker for user location
+                    const userMarker = L.marker([latitude, longitude], {
+                        icon: L.divIcon({
+                            className: 'user-location-marker',
+                            html: '<div class="user-location-dot"></div>',
+                            iconSize: [20, 20],
+                            iconAnchor: [10, 10]
+                        })
+                    }).addTo(map);
+
+                    // Remove user marker after 5 seconds
+                    setTimeout(() => {
+                        map.removeLayer(userMarker);
+                    }, 5000);
+
+                    setStatus('Location found!');
+                    setTimeout(() => setStatus(''), 2000);
+                    locateBtn.disabled = false;
+                },
+                (error) => {
+                    let message = 'Unable to get your location';
+                    if (error.code === error.PERMISSION_DENIED) {
+                        message = 'Location permission denied';
+                    } else if (error.code === error.POSITION_UNAVAILABLE) {
+                        message = 'Location information unavailable';
+                    } else if (error.code === error.TIMEOUT) {
+                        message = 'Location request timed out';
+                    }
+                    setStatus(message);
+                    setTimeout(() => setStatus(''), 3000);
+                    locateBtn.disabled = false;
+                }
+            );
+        });
+    }
 
 })();
